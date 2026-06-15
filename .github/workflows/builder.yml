@@ -14,8 +14,10 @@ env:
   UV_HTTP_TIMEOUT: 60
   UV_SYSTEM_PYTHON: "true"
   # Base image version from https://github.com/home-assistant/docker
-  BASE_IMAGE_VERSION: "2026.05.0"
-  ARCHITECTURES: '["amd64", "aarch64"]'
+  BASE_IMAGE_VERSION: "latest"
+  REGISTRY_PREFIX: ghcr.io/${{ github.repository_owner }}
+  BASE_IMAGE_REGISTRY_PREFIX: ghcr.io/${{ github.repository_owner }}
+  ARCHITECTURES: '["armv7", "armhf"]'
 
 permissions: {}
 
@@ -26,7 +28,6 @@ concurrency:
 jobs:
   init:
     name: Initialize build
-    if: github.repository_owner == 'home-assistant'
     runs-on: ubuntu-latest
     permissions:
       contents: read # To check out the repository
@@ -84,7 +85,6 @@ jobs:
 
   build_base:
     name: Build ${{ matrix.arch }} base core image
-    if: github.repository_owner == 'home-assistant'
     needs: init
     runs-on: ${{ matrix.os }}
     permissions:
@@ -96,10 +96,12 @@ jobs:
       matrix:
         arch: ${{ fromJson(needs.init.outputs.architectures) }}
         include:
-          - arch: amd64
+          - arch: armv7
             os: ubuntu-24.04
-          - arch: aarch64
-            os: ubuntu-24.04-arm
+            platform: linux/arm/v7
+          - arch: armhf
+            os: ubuntu-24.04
+            platform: linux/arm/v6
     steps:
       - name: Checkout the repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -193,23 +195,21 @@ jobs:
           echo "${GITHUB_SHA};${GITHUB_REF};${GITHUB_EVENT_NAME};${GITHUB_ACTOR}" > rootfs/OFFICIAL_IMAGE
 
       - name: Build base image
-        uses: home-assistant/builder/actions/build-image@62a1597b84b3461abad9816d9cd92862a2b542c3 # 2026.03.2
+        uses: edbordin/homeassistant-builder/actions/build-image@restore-armv7-armhf-builds
         with:
           arch: ${{ matrix.arch }}
           build-args: |
-            BUILD_FROM=ghcr.io/home-assistant/${{ matrix.arch }}-homeassistant-base:${{ needs.init.outputs.base_image_version }}
+            BUILD_FROM=${{ env.BASE_IMAGE_REGISTRY_PREFIX }}/${{ matrix.arch }}-homeassistant-base:${{ needs.init.outputs.base_image_version }}
           cache-gha: false
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
-          cosign-base-identity: "https://github.com/home-assistant/docker/.*"
-          cosign-base-verify: ghcr.io/home-assistant/${{ matrix.arch }}-homeassistant-base:${{ needs.init.outputs.base_image_version }}
-          image: ghcr.io/home-assistant/${{ matrix.arch }}-homeassistant
+          image: ${{ env.REGISTRY_PREFIX }}/${{ matrix.arch }}-homeassistant
           image-tags: ${{ needs.init.outputs.version }}
+          platform: ${{ matrix.platform }}
           push: true
           version: ${{ needs.init.outputs.version }}
 
   build_machine:
     name: Build ${{ matrix.machine }} machine core image
-    if: github.repository_owner == 'home-assistant'
     needs: ["init", "build_base"]
     runs-on: ${{ matrix.runs-on }}
     permissions:
@@ -218,31 +218,35 @@ jobs:
       id-token: write # For cosign signing
     strategy:
       matrix:
-        machine:
-          - generic-x86-64
-          - khadas-vim3
-          - odroid-c2
-          - odroid-c4
-          - odroid-m1
-          - odroid-n2
-          - qemuarm-64
-          - qemux86-64
-          - raspberrypi3-64
-          - raspberrypi4-64
-          - raspberrypi5-64
-          - yellow
-          - green
         include:
-          # Default: aarch64 on native ARM runner
-          - arch: aarch64
-            runs-on: ubuntu-24.04-arm
-          # Overrides for amd64 machines
-          - machine: generic-x86-64
-            arch: amd64
+          - machine: odroid-xu
+            arch: armv7
             runs-on: ubuntu-24.04
-          - machine: qemux86-64
-            arch: amd64
+            platform: linux/arm/v7
+          - machine: qemuarm
+            arch: armv7
             runs-on: ubuntu-24.04
+            platform: linux/arm/v7
+          - machine: raspberrypi
+            arch: armhf
+            runs-on: ubuntu-24.04
+            platform: linux/arm/v6
+          - machine: raspberrypi2
+            arch: armv7
+            runs-on: ubuntu-24.04
+            platform: linux/arm/v7
+          - machine: raspberrypi3
+            arch: armv7
+            runs-on: ubuntu-24.04
+            platform: linux/arm/v7
+          - machine: raspberrypi4
+            arch: armv7
+            runs-on: ubuntu-24.04
+            platform: linux/arm/v7
+          - machine: tinker
+            arch: armv7
+            runs-on: ubuntu-24.04
+            platform: linux/arm/v7
     steps:
       - name: Checkout the repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -264,21 +268,22 @@ jobs:
           fi
 
       - name: Build machine image
-        uses: home-assistant/builder/actions/build-image@62a1597b84b3461abad9816d9cd92862a2b542c3 # 2026.03.2
+        uses: edbordin/homeassistant-builder/actions/build-image@restore-armv7-armhf-builds
         with:
           arch: ${{ matrix.arch }}
           build-args: |
-            BUILD_FROM=ghcr.io/home-assistant/${{ matrix.arch }}-homeassistant:${{ needs.init.outputs.version }}
+            BUILD_FROM=${{ env.REGISTRY_PREFIX }}/${{ matrix.arch }}-homeassistant:${{ needs.init.outputs.version }}
           cache-gha: false
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
           context: machine/
-          cosign-base-identity: "https://github.com/home-assistant/core/.*"
-          cosign-base-verify: ghcr.io/home-assistant/${{ matrix.arch }}-homeassistant:${{ needs.init.outputs.version }}
+          cosign-base-identity: "https://github.com/${{ github.repository }}/.*"
+          cosign-base-verify: ${{ env.REGISTRY_PREFIX }}/${{ matrix.arch }}-homeassistant:${{ needs.init.outputs.version }}
           file: machine/${{ matrix.machine }}
-          image: ghcr.io/home-assistant/${{ matrix.machine }}-homeassistant
+          image: ${{ env.REGISTRY_PREFIX }}/${{ matrix.machine }}-homeassistant
           image-tags: |
             ${{ needs.init.outputs.version }}
             ${{ steps.tags.outputs.extra_tags }}
+          platform: ${{ matrix.platform }}
           push: true
           version: ${{ needs.init.outputs.version }}
 
@@ -325,7 +330,6 @@ jobs:
   publish_container:
     name: Publish to ${{ matrix.registry }}
     environment: ${{ needs.init.outputs.channel }}
-    if: github.repository_owner == 'home-assistant'
     needs: ["init", "build_base"]
     runs-on: ubuntu-latest
     permissions:
@@ -335,7 +339,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        registry: ["ghcr.io/home-assistant", "docker.io/homeassistant"]
+        registry: ["ghcr.io/${{ github.repository_owner }}"]
     steps:
       - name: Install Cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
@@ -360,15 +364,17 @@ jobs:
         shell: bash
         env:
           ARCHITECTURES: ${{ needs.init.outputs.architectures }}
+          REGISTRY_PREFIX: ${{ env.REGISTRY_PREFIX }}
           VERSION: ${{ needs.init.outputs.version }}
+          COSIGN_IDENTITY: https://github.com/${{ github.repository }}/.*
         run: |
           ARCHS=$(echo "${ARCHITECTURES}" | jq -r '.[]')
           for arch in $ARCHS; do
             echo "Verifying ${arch} image signature..."
             cosign verify \
               --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-              --certificate-identity-regexp https://github.com/home-assistant/core/.* \
-              "ghcr.io/home-assistant/${arch}-homeassistant:${VERSION}"
+              --certificate-identity-regexp "${COSIGN_IDENTITY}" \
+              "${REGISTRY_PREFIX}/${arch}-homeassistant:${VERSION}"
           done
           echo "✓ All images verified successfully"
 

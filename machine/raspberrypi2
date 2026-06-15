@@ -3,7 +3,10 @@
 #
 # To update, run python3 -m script.hassfest -p docker
 ARG REGISTRY_PREFIX=ghcr.io/edbordin
-ARG BUILD_FROM=${REGISTRY_PREFIX}/amd64-homeassistant:latest
+ARG BUILD_FROM=${REGISTRY_PREFIX}/armv7-homeassistant:latest
 FROM ${BUILD_FROM}
 
-LABEL io.hass.machine="qemux86-64"
+RUN apk --no-cache add \
+    raspberrypi-utils
+
+LABEL io.hass.machine="raspberrypi2"
