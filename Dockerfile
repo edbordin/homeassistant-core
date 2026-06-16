@@ -34,14 +34,14 @@ COPY --parents requirements.txt homeassistant/package_constraints.txt homeassist
 RUN \
     # Verify go2rtc can be executed
     go2rtc --version \
-    && echo "@edge https://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories \
+    && echo "https://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories \
     && apk add --no-cache --virtual .ha-build-deps \
         autoconf \
         automake \
         blas-dev \
         bluez-dev \
         build-base \
-        cargo@edge \
+        'cargo>1.93' \
         cmake \
         eigen-dev \
         eudev-dev \
@@ -73,7 +73,7 @@ RUN \
         openjpeg-dev \
         openssl-dev \
         pkgconf \
-        rust@edge \
+        'rust>1.93' \
         tiff-dev \
         uchardet-dev \
         yaml-dev \
