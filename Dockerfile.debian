@@ -1,0 +1,116 @@
+# syntax=docker/dockerfile@sha256:2780b5c3bab67f1f76c781860de469442999ed1a0d7992a5efdf2cffc0e3d769
+ARG BUILD_FROM
+FROM ${BUILD_FROM}
+
+LABEL \
+    io.hass.type="core" \
+    org.opencontainers.image.authors="The Home Assistant Authors" \
+    org.opencontainers.image.description="Open-source home automation platform running on Python 3" \
+    org.opencontainers.image.documentation="https://www.home-assistant.io/docs/" \
+    org.opencontainers.image.licenses="Apache-2.0" \
+    org.opencontainers.image.title="Home Assistant Debian" \
+    org.opencontainers.image.url="https://www.home-assistant.io/"
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# Synchronize with homeassistant/core.py:async_stop
+ENV \
+    PIP_EXTRA_INDEX_URL=https://pypi.org/simple \
+    PIP_INDEX_URL=https://www.piwheels.org/simple \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_PREFER_BINARY=1 \
+    S6_SERVICES_GRACETIME=240000 \
+    UV_EXTRA_INDEX_URL=https://pypi.org/simple \
+    UV_INDEX_URL=https://www.piwheels.org/simple \
+    UV_INDEX_STRATEGY=unsafe-best-match \
+    UV_NO_CACHE=true \
+    UV_SYSTEM_PYTHON=true
+
+WORKDIR /usr/src
+
+# Home Assistant S6-Overlay
+COPY rootfs /
+
+# Add go2rtc binary
+COPY --from=ghcr.io/alexxit/go2rtc:1.9.14@sha256:675c318b23c06fd862a61d262240c9a63436b4050d177ffc68a32710d9e05bae /usr/local/bin/go2rtc /bin/go2rtc
+
+## Setup Home Assistant Core dependencies
+COPY --parents requirements.txt homeassistant/package_constraints.txt homeassistant/
+RUN \
+    go2rtc --version \
+    && apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        autoconf \
+        automake \
+        build-essential \
+        cargo \
+        cmake \
+        ffmpeg \
+        gfortran \
+        git \
+        libavcodec-dev \
+        libavdevice-dev \
+        libavfilter-dev \
+        libavformat-dev \
+        libavutil-dev \
+        libblas-dev \
+        libbluetooth-dev \
+        libdc1394-dev \
+        libeigen3-dev \
+        libffi-dev \
+        libfreetype-dev \
+        libgammu-dev \
+        libgeos-dev \
+        libglew-dev \
+        libglib2.0-dev \
+        libgmp-dev \
+        libharfbuzz-dev \
+        libhdf5-dev \
+        libjpeg-dev \
+        liblapack-dev \
+        libmpc-dev \
+        libmpfr-dev \
+        libopenblas-dev \
+        libopenexr-dev \
+        libopenjp2-7-dev \
+        libpcap-dev \
+        libpng-dev \
+        libpulse-dev \
+        libssl-dev \
+        libswresample-dev \
+        libswscale-dev \
+        libtbb-dev \
+        libtiff-dev \
+        libtool \
+        libturbojpeg0 \
+        libturbojpeg0-dev \
+        libudev-dev \
+        libxml2-dev \
+        libxslt1-dev \
+        libyaml-dev \
+        libzbar-dev \
+        nasm \
+        pkg-config \
+        rustc \
+        zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && python3 -m pip install \
+        -r homeassistant/requirements.txt
+
+COPY requirements_all.txt home_assistant_frontend-* home_assistant_intents-* homeassistant/
+RUN \
+    if ls homeassistant/home_assistant_*.whl 1> /dev/null 2>&1; then \
+        python3 -m pip install homeassistant/home_assistant_*.whl; \
+    fi \
+    && python3 -m pip install \
+        -r homeassistant/requirements_all.txt
+
+## Setup Home Assistant Core
+COPY --parents LICENSE* README* homeassistant/ pyproject.toml homeassistant/
+RUN \
+    python3 -m pip install \
+        -e ./homeassistant \
+    && python3 -m compileall \
+        homeassistant/homeassistant
+
+WORKDIR /config

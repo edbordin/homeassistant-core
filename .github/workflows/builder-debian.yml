@@ -1,0 +1,281 @@
+name: Build Debian images
+
+# yamllint disable-line rule:truthy
+on:
+  workflow_dispatch:
+
+env:
+  BASE_IMAGE_REGISTRY_PREFIX: ghcr.io/${{ github.repository_owner }}
+  BASE_IMAGE_VERSION: "3.14-debiantrixie"
+  BUILD_TYPE: core
+  PIP_TIMEOUT: 120
+  REGISTRY_PREFIX: ghcr.io/${{ github.repository_owner }}
+  UV_HTTP_TIMEOUT: 120
+  UV_SYSTEM_PYTHON: "true"
+  ARCHITECTURES: '["armv7", "armhf"]'
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  init:
+    name: Initialize Debian build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      channel: ${{ steps.version.outputs.channel }}
+      architectures: ${{ env.ARCHITECTURES }}
+      base_image_version: ${{ env.BASE_IMAGE_VERSION }}
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version-file: ".python-version"
+
+      - name: Get version
+        id: version
+        uses: home-assistant/actions/helpers/version@master # zizmor: ignore[unpinned-uses]
+        with:
+          type: ${{ env.BUILD_TYPE }}
+
+      - name: Verify version
+        uses: home-assistant/actions/helpers/verify-version@master # zizmor: ignore[unpinned-uses]
+        with:
+          ignore-dev: true
+
+      - name: Fail if translations files are checked in
+        run: |
+          if [ -n "$(find homeassistant/components/*/translations -type f)" ]; then
+              echo "Translations files are checked in, please remove the following files:"
+              find homeassistant/components/*/translations -type f
+              exit 1
+          fi
+
+      - name: Download Translations
+        if: env.LOKALISE_TOKEN != ''
+        run: python3 -m script.translations download
+        env:
+          LOKALISE_TOKEN: ${{ secrets.LOKALISE_TOKEN }} # zizmor: ignore[secrets-outside-env]
+
+      - name: Archive translations
+        shell: bash
+        run: |
+          mapfile -t translations < <(find ./homeassistant/components/*/translations -name "*.json" 2>/dev/null || true)
+          if ((${#translations[@]})); then
+            printf '%s\n' "${translations[@]}" | tar zcvf translations.tar.gz -T -
+          else
+            tar zcvf translations.tar.gz --files-from /dev/null
+          fi
+
+      - name: Upload translations
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: translations-debian
+          path: translations.tar.gz
+          if-no-files-found: error
+
+  build_base:
+    name: Build ${{ matrix.arch }} Debian core image
+    needs: init
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: ${{ fromJson(needs.init.outputs.architectures) }}
+        include:
+          - arch: armv7
+            os: ubuntu-24.04
+            platform: linux/arm/v7
+          - arch: armhf
+            os: ubuntu-24.04
+            platform: linux/arm/v6
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Download nightly wheels of frontend
+        if: needs.init.outputs.channel == 'dev'
+        uses: dawidd6/action-download-artifact@b6e2e70617bc3265edd6dab6c906732b2f1ae151 # v21
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          repo: home-assistant/frontend
+          branch: dev
+          workflow: nightly.yaml
+          workflow_conclusion: success
+          name: wheels
+
+      - name: Download nightly wheels of intents
+        if: needs.init.outputs.channel == 'dev'
+        uses: dawidd6/action-download-artifact@b6e2e70617bc3265edd6dab6c906732b2f1ae151 # v21
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          repo: OHF-Voice/intents-package
+          branch: main
+          workflow: nightly.yaml
+          workflow_conclusion: success
+          name: package
+
+      - name: Set up Python
+        if: needs.init.outputs.channel == 'dev'
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version-file: ".python-version"
+
+      - name: Adjust nightly version
+        if: needs.init.outputs.channel == 'dev'
+        shell: bash
+        env:
+          UV_PRERELEASE: allow
+          VERSION: ${{ needs.init.outputs.version }}
+        run: |
+          python3 -m pip install "$(grep '^uv' < requirements.txt)"
+          uv pip install packaging tomli
+          uv pip install .
+          python3 script/version_bump.py nightly --set-nightly-version "${VERSION}"
+
+          if [[ "$(ls home_assistant_frontend*.whl)" =~ ^home_assistant_frontend-(.*)-py3-none-any.whl$ ]]; then
+            echo "Found frontend wheel, setting version to: ${BASH_REMATCH[1]}"
+            frontend_version="${BASH_REMATCH[1]}" yq \
+              --inplace e -o json \
+              '.requirements = ["home-assistant-frontend=="+env(frontend_version)]' \
+              homeassistant/components/frontend/manifest.json
+
+            sed -i "s|home-assistant-frontend==.*|home-assistant-frontend==${BASH_REMATCH[1]}|" \
+              homeassistant/package_constraints.txt
+
+            sed -i "s|home-assistant-frontend==.*||" requirements_all.txt
+          fi
+
+          if [[ "$(ls home_assistant_intents*.whl)" =~ ^home_assistant_intents-(.*)-py3-none-any.whl$ ]]; then
+            echo "Found intents wheel, setting version to: ${BASH_REMATCH[1]}"
+            yq \
+              --inplace e -o json \
+              'del(.requirements[] | select(contains("home-assistant-intents")))' \
+              homeassistant/components/conversation/manifest.json
+
+            intents_version="${BASH_REMATCH[1]}" yq \
+              --inplace e -o json \
+              '.requirements += ["home-assistant-intents=="+env(intents_version)]' \
+              homeassistant/components/conversation/manifest.json
+
+            sed -i "s|home-assistant-intents==.*|home-assistant-intents==${BASH_REMATCH[1]}|" \
+              homeassistant/package_constraints.txt
+
+            sed -i "s|home-assistant-intents==.*||" requirements_all.txt requirements.txt
+          fi
+
+      - name: Download translations
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: translations-debian
+
+      - name: Extract translations
+        run: |
+          tar xvf translations.tar.gz
+          rm translations.tar.gz
+
+      - name: Write meta info file
+        shell: bash
+        run: |
+          echo "${GITHUB_SHA};${GITHUB_REF};${GITHUB_EVENT_NAME};${GITHUB_ACTOR}" > rootfs/OFFICIAL_IMAGE
+
+      - name: Build Debian base image
+        uses: edbordin/homeassistant-builder/actions/build-image@restore-armv7-armhf-builds
+        with:
+          arch: ${{ matrix.arch }}
+          build-args: |
+            BUILD_FROM=${{ env.BASE_IMAGE_REGISTRY_PREFIX }}/base-python:${{ needs.init.outputs.base_image_version }}
+          cache-gha: false
+          container-registry-password: ${{ secrets.GITHUB_TOKEN }}
+          file: Dockerfile.debian
+          image: ${{ env.REGISTRY_PREFIX }}/${{ matrix.arch }}-homeassistant-debian
+          image-tags: ${{ needs.init.outputs.version }}
+          platform: ${{ matrix.platform }}
+          push: true
+          version: ${{ needs.init.outputs.version }}
+
+  publish_container:
+    name: Publish Debian manifest
+    needs: ["init", "build_base"]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        with:
+          cosign-release: "v2.5.3"
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify architecture image signatures
+        shell: bash
+        env:
+          ARCHITECTURES: ${{ needs.init.outputs.architectures }}
+          REGISTRY_PREFIX: ${{ env.REGISTRY_PREFIX }}
+          VERSION: ${{ needs.init.outputs.version }}
+          COSIGN_IDENTITY: https://github.com/${{ github.repository }}/.*
+        run: |
+          ARCHS=$(echo "${ARCHITECTURES}" | jq -r '.[]')
+          for arch in $ARCHS; do
+            echo "Verifying ${arch} Debian image signature..."
+            cosign verify \
+              --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+              --certificate-identity-regexp "${COSIGN_IDENTITY}" \
+              "${REGISTRY_PREFIX}/${arch}-homeassistant-debian:${VERSION}"
+          done
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v3.7.1
+
+      - name: Create and push Debian multi-arch manifest
+        shell: bash
+        env:
+          ARCHITECTURES: ${{ needs.init.outputs.architectures }}
+          REGISTRY_PREFIX: ${{ env.REGISTRY_PREFIX }}
+          VERSION: ${{ needs.init.outputs.version }}
+        run: |
+          ARCHS=$(echo "${ARCHITECTURES}" | jq -r '.[]')
+          ARCH_IMAGES=()
+          for arch in $ARCHS; do
+            ARCH_IMAGES+=("${REGISTRY_PREFIX}/${arch}-homeassistant-debian:${VERSION}")
+          done
+
+          TAG_ARGS=("--tag" "${REGISTRY_PREFIX}/homeassistant-debian:${VERSION}")
+          if [[ "${VERSION}" =~ d ]]; then
+            TAG_ARGS+=("--tag" "${REGISTRY_PREFIX}/homeassistant-debian:dev")
+          elif [[ "${VERSION}" =~ b ]]; then
+            TAG_ARGS+=("--tag" "${REGISTRY_PREFIX}/homeassistant-debian:beta")
+          else
+            TAG_ARGS+=("--tag" "${REGISTRY_PREFIX}/homeassistant-debian:stable")
+            TAG_ARGS+=("--tag" "${REGISTRY_PREFIX}/homeassistant-debian:latest")
+          fi
+
+          docker buildx imagetools create "${TAG_ARGS[@]}" "${ARCH_IMAGES[@]}"
+
+          for ((i=1; i<${#TAG_ARGS[@]}; i+=2)); do
+            cosign sign --yes "${TAG_ARGS[i]}"
+          done
