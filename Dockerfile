@@ -35,6 +35,8 @@ RUN \
     # Verify go2rtc can be executed
     go2rtc --version \
     && apk add --no-cache --virtual .ha-build-deps \
+        autoconf \
+        automake \
         blas-dev \
         bluez-dev \
         build-base \
@@ -57,6 +59,7 @@ RUN \
         libffi-dev \
         libjpeg-turbo-dev \
         libpng-dev \
+        libtool \
         libtbb-dev \
         libxml2-dev \
         libxslt-dev \
