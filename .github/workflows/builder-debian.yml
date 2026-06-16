@@ -6,7 +6,7 @@ on:
 
 env:
   BASE_IMAGE_REGISTRY_PREFIX: ghcr.io/${{ github.repository_owner }}
-  BASE_IMAGE_VERSION: "3.14-debiantrixie"
+  BASE_IMAGE_VERSION: "3.13-debiantrixie"
   BUILD_TYPE: core
   PIP_TIMEOUT: 120
   REGISTRY_PREFIX: ghcr.io/${{ github.repository_owner }}
