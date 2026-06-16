@@ -16,9 +16,6 @@ LABEL \
 
 # Synchronize with homeassistant/core.py:async_stop
 ENV \
-    CARGO_HOME=/usr/local/cargo \
-    PATH=/usr/local/cargo/bin:$PATH \
-    RUSTUP_HOME=/usr/local/rustup \
     S6_SERVICES_GRACETIME=240000 \
     UV_INDEX_STRATEGY=unsafe-best-match \
     UV_SYSTEM_PYTHON=true \
@@ -37,15 +34,15 @@ COPY --parents requirements.txt homeassistant/package_constraints.txt homeassist
 RUN \
     # Verify go2rtc can be executed
     go2rtc --version \
+    && echo "@edge https://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories \
     && apk add --no-cache --virtual .ha-build-deps \
         autoconf \
         automake \
         blas-dev \
         bluez-dev \
         build-base \
-        cargo \
+        cargo@edge \
         cmake \
-        curl \
         eigen-dev \
         eudev-dev \
         ffmpeg-dev \
@@ -76,12 +73,11 @@ RUN \
         openjpeg-dev \
         openssl-dev \
         pkgconf \
+        rust@edge \
         tiff-dev \
         uchardet-dev \
         yaml-dev \
         zlib-ng-dev \
-    && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
-        | sh -s -- -y --profile minimal --default-toolchain 1.94.0 --no-modify-path \
     && rustc --version \
     && cargo --version \
     # Install uv at the version pinned in the requirements file
