@@ -99,6 +99,7 @@ FROM python:{python_version}-alpine
 
 ENV \
     UV_SYSTEM_PYTHON=true \
+    UV_INDEX_STRATEGY=unsafe-best-match \
     UV_EXTRA_INDEX_URL="https://wheels.home-assistant.io/musllinux-index/"
 
 SHELL ["/bin/sh", "-o", "pipefail", "-c"]
@@ -113,16 +114,24 @@ RUN --mount=type=tmpfs,target=/tmp \
     --mount=type=bind,source=requirements_test_pre_commit.txt,target=/tmp/requirements_test_pre_commit.txt,readonly \
     # Required for PyTurboJPEG
     apk add --no-cache libturbojpeg \
+    && apk add --no-cache --virtual .hassfest-build-deps \
+        build-base \
+        cargo \
+        libffi-dev \
+        linux-headers \
+        openssl-dev \
+        pkgconf \
+        yaml-dev \
     # Install uv at the version pinned in the requirements file
     && pip install --no-cache-dir "uv==$(awk -F'==' '/^uv==/{{print $2}}' /usr/src/homeassistant/requirements.txt)" \
     && uv pip install \
-        --no-build \
         --no-cache \
         -c /usr/src/homeassistant/homeassistant/package_constraints.txt \
         -r /usr/src/homeassistant/requirements.txt \
         "pipdeptree==$(awk -F'==' '/^pipdeptree==/{{print $2}}' /tmp/requirements_test.txt)" \
         "tqdm==$(awk -F'==' '/^tqdm==/{{print $2}}' /tmp/requirements_test.txt)" \
-        "ruff==$(awk -F'==' '/^ruff==/{{print $2}}' /tmp/requirements_test_pre_commit.txt)"
+        "ruff==$(awk -F'==' '/^ruff==/{{print $2}}' /tmp/requirements_test_pre_commit.txt)" \
+    && apk del .hassfest-build-deps
 
 LABEL "name"="hassfest"
 LABEL "maintainer"="Home Assistant <hello@home-assistant.io>"

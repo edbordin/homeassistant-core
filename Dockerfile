@@ -17,6 +17,7 @@ LABEL \
 # Synchronize with homeassistant/core.py:async_stop
 ENV \
     S6_SERVICES_GRACETIME=240000 \
+    UV_INDEX_STRATEGY=unsafe-best-match \
     UV_SYSTEM_PYTHON=true \
     UV_NO_CACHE=true
 
@@ -33,10 +34,48 @@ COPY --parents requirements.txt homeassistant/package_constraints.txt homeassist
 RUN \
     # Verify go2rtc can be executed
     go2rtc --version \
+    && apk add --no-cache --virtual .ha-build-deps \
+        blas-dev \
+        bluez-dev \
+        build-base \
+        cargo \
+        cmake \
+        eigen-dev \
+        eudev-dev \
+        ffmpeg-dev \
+        fftw-dev \
+        freetype-dev \
+        gfortran \
+        git \
+        glew-dev \
+        glib-dev \
+        gmp-dev \
+        harfbuzz-dev \
+        hdf5-dev \
+        lapack-dev \
+        libdc1394-dev \
+        libffi-dev \
+        libjpeg-turbo-dev \
+        libpng-dev \
+        libtbb-dev \
+        libxml2-dev \
+        libxslt-dev \
+        linux-headers \
+        mpc1-dev \
+        mpfr-dev \
+        nasm \
+        openblas-dev \
+        openexr-dev \
+        openjpeg-dev \
+        openssl-dev \
+        pkgconf \
+        tiff-dev \
+        uchardet-dev \
+        yaml-dev \
+        zlib-ng-dev \
     # Install uv at the version pinned in the requirements file
     && pip3 install --no-cache-dir "uv==$(awk -F'==' '/^uv==/{print $2}' homeassistant/requirements.txt)" \
     && uv pip install \
-        --no-build \
         -r homeassistant/requirements.txt
 
 COPY requirements_all.txt home_assistant_frontend-* home_assistant_intents-* homeassistant/
@@ -45,8 +84,8 @@ RUN \
         uv pip install homeassistant/home_assistant_*.whl; \
     fi \
     && uv pip install \
-        --no-build \
-        -r homeassistant/requirements_all.txt
+        -r homeassistant/requirements_all.txt \
+    && apk del .ha-build-deps
 
 ## Setup Home Assistant Core
 COPY --parents LICENSE* README* homeassistant/ pyproject.toml homeassistant/
