@@ -16,6 +16,9 @@ LABEL \
 
 # Synchronize with homeassistant/core.py:async_stop
 ENV \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:$PATH \
+    RUSTUP_HOME=/usr/local/rustup \
     S6_SERVICES_GRACETIME=240000 \
     UV_INDEX_STRATEGY=unsafe-best-match \
     UV_SYSTEM_PYTHON=true \
@@ -42,6 +45,7 @@ RUN \
         build-base \
         cargo \
         cmake \
+        curl \
         eigen-dev \
         eudev-dev \
         ffmpeg-dev \
@@ -76,6 +80,10 @@ RUN \
         uchardet-dev \
         yaml-dev \
         zlib-ng-dev \
+    && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+        | sh -s -- -y --profile minimal --default-toolchain 1.94.0 --no-modify-path \
+    && rustc --version \
+    && cargo --version \
     # Install uv at the version pinned in the requirements file
     && pip3 install --no-cache-dir "uv==$(awk -F'==' '/^uv==/{print $2}' homeassistant/requirements.txt)" \
     && uv pip install \
