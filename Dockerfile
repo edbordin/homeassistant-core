@@ -19,7 +19,7 @@ ENV \
     S6_SERVICES_GRACETIME=240000 \
     UV_INDEX_STRATEGY=unsafe-best-match \
     UV_SYSTEM_PYTHON=true \
-    UV_NO_CACHE=true
+    UV_CACHE_DIR=/root/.cache/uv
 
 WORKDIR /usr/src
 
@@ -31,10 +31,13 @@ COPY --from=ghcr.io/alexxit/go2rtc:1.9.14@sha256:675c318b23c06fd862a61d262240c9a
 
 ## Setup Home Assistant Core dependencies
 COPY --parents requirements.txt homeassistant/package_constraints.txt homeassistant/
-RUN \
-    # Verify go2rtc can be executed
+# Verify go2rtc can be executed
+RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
+    --mount=type=cache,target=/root/.cache/pip,sharing=locked \
+    --mount=type=cache,target=/root/.cache/uv,sharing=locked \
     go2rtc --version \
     && echo "https://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories \
+    && echo "https://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories \
     && apk add --no-cache --virtual .ha-build-deps \
         autoconf \
         automake \
@@ -45,7 +48,7 @@ RUN \
         cmake \
         eigen-dev \
         eudev-dev \
-        ffmpeg-dev \
+        'ffmpeg-dev>8' \
         fftw-dev \
         freetype-dev \
         gfortran \
@@ -81,12 +84,12 @@ RUN \
     && rustc --version \
     && cargo --version \
     # Install uv at the version pinned in the requirements file
-    && pip3 install --no-cache-dir "uv==$(awk -F'==' '/^uv==/{print $2}' homeassistant/requirements.txt)" \
+    && pip3 install "uv==$(awk -F'==' '/^uv==/{print $2}' homeassistant/requirements.txt)" \
     && uv pip install \
         -r homeassistant/requirements.txt
 
 COPY requirements_all.txt home_assistant_frontend-* home_assistant_intents-* homeassistant/
-RUN \
+RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
     if ls homeassistant/home_assistant_*.whl 1> /dev/null 2>&1; then \
         uv pip install homeassistant/home_assistant_*.whl; \
     fi \
@@ -96,7 +99,7 @@ RUN \
 
 ## Setup Home Assistant Core
 COPY --parents LICENSE* README* homeassistant/ pyproject.toml homeassistant/
-RUN \
+RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
     uv pip install \
         -e ./homeassistant \
     && python3 -m compileall \

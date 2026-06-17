@@ -201,7 +201,8 @@ jobs:
           arch: ${{ matrix.arch }}
           build-args: |
             BUILD_FROM=${{ env.BASE_IMAGE_REGISTRY_PREFIX }}/base-python:${{ needs.init.outputs.base_image_version }}
-          cache-gha: false
+          cache-gha: true
+          cache-gha-scope: core-debian-base
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
           file: Dockerfile.debian
           image: ${{ env.REGISTRY_PREFIX }}/${{ matrix.arch }}-homeassistant-debian

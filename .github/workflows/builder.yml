@@ -207,7 +207,8 @@ jobs:
           arch: ${{ matrix.arch }}
           build-args: |
             BUILD_FROM=${{ env.BASE_IMAGE_REGISTRY_PREFIX }}/${{ matrix.arch }}-homeassistant-base:${{ needs.init.outputs.base_image_version }}
-          cache-gha: false
+          cache-gha: true
+          cache-gha-scope: core-base
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
           image: ${{ env.REGISTRY_PREFIX }}/${{ matrix.arch }}-homeassistant
           image-tags: ${{ needs.init.outputs.version }}
@@ -280,7 +281,8 @@ jobs:
           arch: ${{ matrix.arch }}
           build-args: |
             BUILD_FROM=${{ env.REGISTRY_PREFIX }}/${{ matrix.arch }}-homeassistant:${{ needs.init.outputs.version }}
-          cache-gha: false
+          cache-gha: true
+          cache-gha-scope: core-machine
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
           context: machine/
           cosign-base-identity: "https://github.com/${{ github.repository }}/.*"
