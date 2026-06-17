@@ -18,6 +18,7 @@ ENV \
     PIP_EXTRA_INDEX_URL=https://pypi.org/simple \
     PIP_INDEX_URL=https://www.piwheels.org/simple \
     PIP_CACHE_DIR=/root/.cache/pip \
+    PIP_NO_BINARY=maturin \
     PIP_PREFER_BINARY=1 \
     S6_SERVICES_GRACETIME=240000 \
     UV_EXTRA_INDEX_URL=https://pypi.org/simple \
