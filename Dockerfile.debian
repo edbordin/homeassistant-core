@@ -72,7 +72,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         liblapack-dev \
         libmpc-dev \
         libmpfr-dev \
-        libopenblas-dev \
         libopenexr-dev \
         libopenjp2-7-dev \
         libpcap-dev \
