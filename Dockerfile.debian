@@ -42,7 +42,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     go2rtc --version \
     && echo "deb http://deb.debian.org/debian unstable main" > /etc/apt/sources.list.d/unstable.list \
-    && printf 'Package: *\nPin: release a=unstable\nPin-Priority: 100\n' > /etc/apt/preferences.d/limit-unstable \
+    && printf 'Package: *\nPin: release n=sid\nPin-Priority: 100\n' > /etc/apt/preferences.d/limit-unstable \
     && apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         autoconf \
@@ -98,16 +98,16 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         rustc \
         zlib1g-dev \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-        cargo/unstable \
-        ffmpeg/unstable \
-        libavcodec-dev/unstable \
-        libavdevice-dev/unstable \
-        libavfilter-dev/unstable \
-        libavformat-dev/unstable \
-        libavutil-dev/unstable \
-        libswresample-dev/unstable \
-        libswscale-dev/unstable \
-        rustc/unstable \
+        cargo/sid \
+        ffmpeg/sid \
+        libavcodec-dev/sid \
+        libavdevice-dev/sid \
+        libavfilter-dev/sid \
+        libavformat-dev/sid \
+        libavutil-dev/sid \
+        libswresample-dev/sid \
+        libswscale-dev/sid \
+        rustc/sid \
     && rustc --version \
     && cargo --version \
     && ffmpeg -version \
