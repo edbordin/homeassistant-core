@@ -239,7 +239,7 @@ def _parse_result(render_result: str) -> Any:
     # render) so the recompile only happens once per distinct result.
     try:
         result = literal_eval(render_result)
-    except ValueError, TypeError, SyntaxError, MemoryError:
+    except (ValueError, TypeError, SyntaxError, MemoryError):
         return render_result
     if type(result) in RESULT_WRAPPERS:
         result = RESULT_WRAPPERS[type(result)](result, render_result=render_result)

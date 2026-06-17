@@ -84,7 +84,7 @@ class AirobotButton(AirobotEntity, ButtonEntity):
         try:
             await self.entity_description.press_fn(self.coordinator)
         # pylint: disable-next=home-assistant-action-swallowed-exception
-        except AirobotConnectionError, AirobotTimeoutError:
+        except (AirobotConnectionError, AirobotTimeoutError):
             # Connection errors during reboot are expected as device restarts
             pass
         except AirobotError as err:

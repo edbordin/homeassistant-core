@@ -49,7 +49,7 @@ async def async_setup_platform(
         async with asyncio.timeout(timeout):
             scenes_resp = await httpsession.get(url, headers=headers)
 
-    except TimeoutError, aiohttp.ClientError:
+    except (TimeoutError, aiohttp.ClientError):
         _LOGGER.exception("Error on %s", url)
         return
 
@@ -92,5 +92,5 @@ class LifxCloudScene(Scene):
                 await httpsession.put(url, headers=self._headers)
 
         # pylint: disable-next=home-assistant-action-swallowed-exception
-        except TimeoutError, aiohttp.ClientError:
+        except (TimeoutError, aiohttp.ClientError):
             _LOGGER.exception("Error on %s", url)

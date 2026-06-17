@@ -44,7 +44,7 @@ async def _async_attempt_connect(port: str, set_id: int) -> str | None:
     except TVNotRespondingError:
         # The port was opened but no LG TV responded to the power query.
         return RESULT_NO_TV
-    except ValueError, ConnectionError, OSError, TimeoutError:
+    except (ValueError, ConnectionError, OSError, TimeoutError):
         # The serial port itself could not be opened.
         return "cannot_connect"
     except Exception:  # noqa: BLE001

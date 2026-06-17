@@ -115,7 +115,7 @@ async def async_setup_platform(
             _LOGGER.error("Got non-ok response from resource: %s", req.status_code)
         else:
             async_add_entities([switch])
-    except TypeError, ValueError:
+    except (TypeError, ValueError):
         _LOGGER.error(
             "Missing resource or schema in configuration. "
             "Add http:// or https:// to your URL"
@@ -225,7 +225,7 @@ class RestSwitch(ManualTriggerEntity, SwitchEntity):
         req = None
         try:
             req = await self.get_response(self.hass)
-        except TimeoutError, httpx.TimeoutException:
+        except (TimeoutError, httpx.TimeoutException):
             _LOGGER.exception(
                 "Timed out while fetching data for %s from %s",
                 self.entity_id,

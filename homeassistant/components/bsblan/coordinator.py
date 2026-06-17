@@ -187,7 +187,7 @@ class BSBLanSlowCoordinator(BSBLanCoordinator[BSBLanSlowData]):
                 return self.data
             # First fetch failed, return empty data
             return BSBLanSlowData()
-        except BSBLANError, AttributeError:
+        except (BSBLANError, AttributeError):
             # Device does not support DHW functionality
             LOGGER.debug(
                 "DHW (Domestic Hot Water) not available on device at %s",

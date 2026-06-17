@@ -80,7 +80,7 @@ class MediaPlayerIsVolumeCondition(EntityNumericalConditionBase):
             return None
         try:
             return float(raw) * 100.0
-        except TypeError, ValueError:
+        except (TypeError, ValueError):
             return None
 
     def _should_include(self, state: State) -> bool:

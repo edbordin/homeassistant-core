@@ -171,7 +171,7 @@ class SerialSensor(SensorEntity):
                     dsrdtr=dsrdtr,
                     **kwargs,
                 )
-            except OSError, SerialException, TimeoutError:
+            except (OSError, SerialException, TimeoutError):
                 if not logged_error:
                     _LOGGER.exception(
                         "Unable to connect to the serial device %s. Will retry", device
@@ -183,7 +183,7 @@ class SerialSensor(SensorEntity):
                 while True:
                     try:
                         line_bytes = await reader.readline()
-                    except OSError, SerialException:
+                    except (OSError, SerialException):
                         _LOGGER.exception(
                             "Error while reading serial device %s", device
                         )

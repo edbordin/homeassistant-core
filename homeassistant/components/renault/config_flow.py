@@ -58,7 +58,7 @@ class RenaultFlowHandler(ConfigFlow, domain=DOMAIN):
                     user_input[RenaultConfigurationKeys.USERNAME],
                     user_input[RenaultConfigurationKeys.PASSWORD],
                 )
-            except aiohttp.ClientConnectionError, GigyaException:
+            except (aiohttp.ClientConnectionError, GigyaException):
                 errors["base"] = "cannot_connect"
             except Exception:
                 _LOGGER.exception("Unexpected exception")

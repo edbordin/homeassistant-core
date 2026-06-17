@@ -73,7 +73,7 @@ class SmtpClient:
         server = None
         try:
             server = self.connect()
-        except socket.gaierror, ConnectionRefusedError:
+        except (socket.gaierror, ConnectionRefusedError):
             _LOGGER.exception(
                 (
                     "SMTP server not found or refused connection (%s:%s). Please check"

@@ -132,7 +132,7 @@ class WyomingTtsProvider(tts.TextToSpeechEntity):
 
                     data = wav_io.getvalue()
 
-        except OSError, WyomingError:
+        except (OSError, WyomingError):
             return (None, None)
 
         return ("wav", data)
@@ -194,7 +194,7 @@ class WyomingTtsProvider(tts.TextToSpeechEntity):
 
             # End stream
             await client.write_event(SynthesizeStop().event())
-        except OSError, WyomingError:
+        except (OSError, WyomingError):
             # Disconnected
             _LOGGER.warning("Unexpected disconnection from TTS client")
 
@@ -228,6 +228,6 @@ class WyomingTtsProvider(tts.TextToSpeechEntity):
                 elif SynthesizeStopped.is_type(event.type):
                     # All TTS audio has been received
                     break
-        except OSError, WyomingError:
+        except (OSError, WyomingError):
             # Disconnected
             _LOGGER.warning("Unexpected disconnection from TTS client")

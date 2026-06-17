@@ -61,7 +61,7 @@ class MotionMountFlowHandler(ConfigFlow, domain=DOMAIN):
         info = {}
         try:
             info = await self._validate_input_connect(self.connection_data)
-        except ConnectionError, socket.gaierror:
+        except (ConnectionError, socket.gaierror):
             return self.async_abort(reason="cannot_connect")
         except TimeoutError:
             return self.async_abort(reason="time_out")
@@ -127,7 +127,7 @@ class MotionMountFlowHandler(ConfigFlow, domain=DOMAIN):
 
         try:
             info = await self._validate_input_connect(self.connection_data)
-        except ConnectionError, socket.gaierror:
+        except (ConnectionError, socket.gaierror):
             return self.async_abort(reason="cannot_connect")
         except TimeoutError:
             return self.async_abort(reason="time_out")

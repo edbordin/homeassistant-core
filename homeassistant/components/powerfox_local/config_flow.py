@@ -83,7 +83,7 @@ class PowerfoxLocalConfigFlow(ConfigFlow, domain=DOMAIN):
 
         try:
             await self._async_validate_connection()
-        except PowerfoxAuthenticationError, PowerfoxConnectionError:
+        except (PowerfoxAuthenticationError, PowerfoxConnectionError):
             return self.async_abort(reason="cannot_connect")
 
         self.context["title_placeholders"] = {

@@ -65,7 +65,7 @@ class ZamgWeather(CoordinatorEntity, WeatherEntity):
                 value := self.coordinator.data[self.station_id]["TL"]["data"]
             ) is not None:
                 return float(value)
-        except KeyError, ValueError, TypeError:
+        except (KeyError, ValueError, TypeError):
             return None
         return None
 
@@ -74,7 +74,7 @@ class ZamgWeather(CoordinatorEntity, WeatherEntity):
         """Return the pressure."""
         try:
             return float(self.coordinator.data[self.station_id]["P"]["data"])
-        except KeyError, ValueError, TypeError:
+        except (KeyError, ValueError, TypeError):
             return None
 
     @property
@@ -82,7 +82,7 @@ class ZamgWeather(CoordinatorEntity, WeatherEntity):
         """Return the humidity."""
         try:
             return float(self.coordinator.data[self.station_id]["RFAM"]["data"])
-        except KeyError, ValueError, TypeError:
+        except (KeyError, ValueError, TypeError):
             return None
 
     @property
@@ -97,7 +97,7 @@ class ZamgWeather(CoordinatorEntity, WeatherEntity):
                 value := self.coordinator.data[self.station_id]["FFX"]["data"]
             ) is not None:
                 return float(value)
-        except KeyError, ValueError, TypeError:
+        except (KeyError, ValueError, TypeError):
             return None
         return None
 
@@ -113,6 +113,6 @@ class ZamgWeather(CoordinatorEntity, WeatherEntity):
                 value := self.coordinator.data[self.station_id]["DDX"]["data"]
             ) is not None:
                 return float(value)
-        except KeyError, ValueError, TypeError:
+        except (KeyError, ValueError, TypeError):
             return None
         return None

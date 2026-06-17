@@ -125,7 +125,7 @@ async def validate_input(
         # https://github.com/bamthomas/aioimaplib/issues/91
         # This handler supplies a better error message.
         errors["base"] = "ssl_error"
-    except TimeoutError, AioImapException, ConnectionRefusedError:
+    except (TimeoutError, AioImapException, ConnectionRefusedError):
         errors["base"] = "cannot_connect"
     else:
         if result != "OK":

@@ -77,7 +77,7 @@ class HVVDeparturesConfigFlow(ConfigFlow, domain=DOMAIN):
                 _LOGGER.debug("Init gti: %r", response)
             except GTIUnauthorizedError:
                 errors["base"] = "invalid_auth"
-            except GTIError, ClientConnectorError:
+            except (GTIError, ClientConnectorError):
                 errors["base"] = "cannot_connect"
 
             if not errors:
@@ -183,7 +183,7 @@ class OptionsFlowHandler(OptionsFlow):
                 )
             except GTIUnauthorizedError:
                 errors["base"] = "invalid_auth"
-            except GTIError, ClientConnectorError:
+            except (GTIError, ClientConnectorError):
                 errors["base"] = "cannot_connect"
             else:
                 self.departure_filters = {

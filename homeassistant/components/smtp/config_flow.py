@@ -260,7 +260,7 @@ def validate_input(user_input: dict[str, Any]) -> dict[str, str]:
         errors["base"] = "invalid_auth"
     except SSLCertVerificationError:
         errors["base"] = "invalid_cert"
-    except socket.gaierror, ConnectionRefusedError:
+    except (socket.gaierror, ConnectionRefusedError):
         errors["base"] = "cannot_connect"
     except Exception:
         _LOGGER.exception("Unexpected exception")

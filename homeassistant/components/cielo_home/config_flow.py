@@ -53,7 +53,7 @@ class CieloConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         except AuthenticationError:
             return None, {"base": "invalid_auth"}
-        except ConnectionError, TimeoutError, ClientError, CieloError:
+        except (ConnectionError, TimeoutError, ClientError, CieloError):
             return None, {"base": "cannot_connect"}
         except Exception:  # noqa: BLE001
             LOGGER.exception("Unexpected exception during config flow validation")

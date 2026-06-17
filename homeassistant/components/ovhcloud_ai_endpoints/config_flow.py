@@ -58,7 +58,7 @@ class OVHcloudAIEndpointsConfigFlow(ConfigFlow, domain=DOMAIN):
             client = _create_client(self.hass, user_input[CONF_API_KEY])
             try:
                 await _validate_api_key(client)
-            except AuthenticationError, PermissionDeniedError:
+            except (AuthenticationError, PermissionDeniedError):
                 errors["base"] = "invalid_auth"
             except OpenAIError:
                 errors["base"] = "cannot_connect"
@@ -95,7 +95,7 @@ class OVHcloudAIEndpointsConfigFlow(ConfigFlow, domain=DOMAIN):
             client = _create_client(self.hass, user_input[CONF_API_KEY])
             try:
                 await _validate_api_key(client)
-            except AuthenticationError, PermissionDeniedError:
+            except (AuthenticationError, PermissionDeniedError):
                 errors["base"] = "invalid_auth"
             except OpenAIError:
                 errors["base"] = "cannot_connect"
@@ -124,7 +124,7 @@ class OVHcloudAIEndpointsConfigFlow(ConfigFlow, domain=DOMAIN):
             client = _create_client(self.hass, user_input[CONF_API_KEY])
             try:
                 await _validate_api_key(client)
-            except AuthenticationError, PermissionDeniedError:
+            except (AuthenticationError, PermissionDeniedError):
                 errors["base"] = "invalid_auth"
             except OpenAIError:
                 errors["base"] = "cannot_connect"

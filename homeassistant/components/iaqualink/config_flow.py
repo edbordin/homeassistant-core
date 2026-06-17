@@ -50,7 +50,7 @@ class AqualinkFlowHandler(ConfigFlow, domain=DOMAIN):
                 pass
         except AqualinkServiceUnauthorizedException:
             return {"base": "invalid_auth"}
-        except AqualinkServiceException, TimeoutError, httpx.HTTPError:
+        except (AqualinkServiceException, TimeoutError, httpx.HTTPError):
             return {"base": "cannot_connect"}
 
         return {}

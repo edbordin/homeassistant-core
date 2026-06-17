@@ -55,7 +55,7 @@ class EVSEConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle incoming MQTT messages on the discovery topic."""
         try:
             payload = json.loads(msg.payload)
-        except json.JSONDecodeError, AttributeError:
+        except (json.JSONDecodeError, AttributeError):
             return
 
         serial = payload.get("id")
@@ -71,7 +71,7 @@ class EVSEConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         try:
             payload = json.loads(discovery_info.payload)
             serial = payload.get("id")
-        except json.JSONDecodeError, AttributeError:
+        except (json.JSONDecodeError, AttributeError):
             return self.async_abort(reason="invalid_discovery_data")
 
         if not isinstance(serial, str) or not serial.strip():
@@ -127,7 +127,7 @@ class EVSEConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 GREENCELL_DISC_TOPIC,
                 self._async_mqtt_message_received,
             )
-        except HomeAssistantError, ValueError:
+        except (HomeAssistantError, ValueError):
             return self.async_abort(reason="mqtt_subscription_failed")
 
         try:

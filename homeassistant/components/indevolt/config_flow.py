@@ -100,7 +100,7 @@ class IndevoltConfigFlow(ConfigFlow, domain=DOMAIN):
 
         try:
             device_data = await self._async_get_device_data(host)
-        except OSError, ClientError, KeyError:
+        except (OSError, ClientError, KeyError):
             return self.async_abort(reason="cannot_connect")
 
         await self.async_set_unique_id(device_data[CONF_SERIAL_NUMBER])
@@ -134,7 +134,7 @@ class IndevoltConfigFlow(ConfigFlow, domain=DOMAIN):
 
         try:
             device_data = await self._async_get_device_data(host)
-        except OSError, ClientError, KeyError:
+        except (OSError, ClientError, KeyError):
             return self.async_abort(reason="cannot_connect")
 
         self.context["title_placeholders"] = {"model": device_data[CONF_MODEL]}
@@ -181,7 +181,7 @@ class IndevoltConfigFlow(ConfigFlow, domain=DOMAIN):
             device_data = await self._async_get_device_data(user_input[CONF_HOST])
         except TimeoutError:
             errors["base"] = "timeout"
-        except ConnectionError, ClientError:
+        except (ConnectionError, ClientError):
             errors["base"] = "cannot_connect"
         except Exception:
             _LOGGER.exception("Unknown error occurred while verifying device")

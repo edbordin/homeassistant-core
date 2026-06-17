@@ -38,7 +38,7 @@ def _validate_device(discovery_info: BluetoothServiceInfoBleak) -> str:
 
         try:
             name = bulb.get_name()
-        except BleakError, OSError, RuntimeError:
+        except (BleakError, OSError, RuntimeError):
             _LOGGER.debug(
                 "Failed to get name for Avea device %s",
                 discovery_info.address,
