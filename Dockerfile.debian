@@ -95,14 +95,16 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         rustc \
         zlib1g-dev \
     && python3 -m pip install \
+        --ignore-requires-python \
         -r homeassistant/requirements.txt
 
 COPY requirements_all.txt home_assistant_frontend-* home_assistant_intents-* homeassistant/
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
     if ls homeassistant/home_assistant_*.whl 1> /dev/null 2>&1; then \
-        python3 -m pip install homeassistant/home_assistant_*.whl; \
+        python3 -m pip install --ignore-requires-python homeassistant/home_assistant_*.whl; \
     fi \
     && python3 -m pip install \
+        --ignore-requires-python \
         -r homeassistant/requirements_all.txt
 
 ## Setup Home Assistant Core
