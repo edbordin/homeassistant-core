@@ -97,17 +97,17 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         pkg-config \
         rustc \
         zlib1g-dev \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends -t unstable \
-        cargo \
-        ffmpeg \
-        libavcodec-dev \
-        libavdevice-dev \
-        libavfilter-dev \
-        libavformat-dev \
-        libavutil-dev \
-        libswresample-dev \
-        libswscale-dev \
-        rustc \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        cargo/unstable \
+        ffmpeg/unstable \
+        libavcodec-dev/unstable \
+        libavdevice-dev/unstable \
+        libavfilter-dev/unstable \
+        libavformat-dev/unstable \
+        libavutil-dev/unstable \
+        libswresample-dev/unstable \
+        libswscale-dev/unstable \
+        rustc/unstable \
     && rustc --version \
     && cargo --version \
     && ffmpeg -version \
