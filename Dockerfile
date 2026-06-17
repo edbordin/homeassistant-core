@@ -17,6 +17,7 @@ LABEL \
 # Synchronize with homeassistant/core.py:async_stop
 ENV \
     S6_SERVICES_GRACETIME=240000 \
+    UV_EXTRA_INDEX_URL="https://wheels.home-assistant.io/musllinux-index/" \
     UV_INDEX_STRATEGY=unsafe-best-match \
     UV_SYSTEM_PYTHON=true \
     UV_CACHE_DIR=/root/.cache/uv
