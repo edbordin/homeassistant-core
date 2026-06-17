@@ -4,6 +4,7 @@
 # To update, run python3 -m script.hassfest -p docker
 ARG BUILD_FROM
 FROM ${BUILD_FROM}
+ARG BUILD_ARCH
 
 LABEL \
     io.hass.type="core" \
@@ -94,8 +95,12 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
     if ls homeassistant/home_assistant_*.whl 1> /dev/null 2>&1; then \
         uv pip install homeassistant/home_assistant_*.whl; \
     fi \
-    && uv pip install \
-        -r homeassistant/requirements_all.txt \
+    && if [ "${BUILD_ARCH}" = "armhf" ]; then \
+        echo "Skipping requirements_all.txt on armhf to stay within GitHub Actions job limits"; \
+    else \
+        uv pip install \
+            -r homeassistant/requirements_all.txt; \
+    fi \
     && apk del .ha-build-deps
 
 ## Setup Home Assistant Core
