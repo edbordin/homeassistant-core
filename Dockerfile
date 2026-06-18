@@ -40,6 +40,8 @@ RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
     go2rtc --version \
     && echo "https://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories \
     && echo "https://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories \
+    && apk add --no-cache \
+        openjpeg \
     && apk add --no-cache --virtual .ha-build-deps \
         autoconf \
         automake \
@@ -101,6 +103,7 @@ RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
         uv pip install \
             -r homeassistant/requirements_all.txt; \
     fi \
+    && python3 -c "from pathlib import Path; import re; root = next(Path('/usr/local/lib').glob('python*/site-packages/hass_nabucasa')); [p.write_text(re.sub(r'except ([A-Za-z0-9_.]+(?:, [A-Za-z0-9_.]+)+):', lambda m: f'except ({m.group(1)}):', p.read_text())) for p in root.rglob('*.py')]" \
     && apk del .ha-build-deps
 
 ## Setup Home Assistant Core
