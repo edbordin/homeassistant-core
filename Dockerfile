@@ -41,6 +41,7 @@ RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
     && echo "https://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories \
     && echo "https://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories \
     && apk add --no-cache \
+        openblas \
         openjpeg \
     && apk add --no-cache --virtual .ha-build-deps \
         autoconf \
